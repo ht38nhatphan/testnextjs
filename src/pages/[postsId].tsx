@@ -1,3 +1,5 @@
+import { useRouter } from "next/router";
+import * as React from "react";
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Line } from 'react-chartjs-2';
@@ -7,21 +9,23 @@ import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
 import Paper from '@mui/material/Paper';
-
 interface Price {
   timestamp: string;
   price: number;
 }
+export interface PostDetailProps {}
 
-const Home: React.FC = () => {
+export default function PostDetail(props: PostDetailProps) {
+  const router = useRouter();
+  const symbol = router.query['postsId'];
   const [prices, setPrices] = useState<Price[]>([]);
   const [loading, setLoading] = useState(true);
-  const symbol = 'PEOPLEUSDT';
+
 
   useEffect(() => {
     const fetchPrices = async () => {
       try {
-        const response = await axios.get<Price[]>(`/api/fetchPrice?symbol=${symbol}`);
+        const response = await axios.get<Price[]>(`/api/fetchPrice?symbol=${router.query['postsId']}`);
         setPrices(response.data);
         setLoading(false);
       } catch (error) {
@@ -63,6 +67,8 @@ const Home: React.FC = () => {
       </Box>
     </Container>
   );
+  
 }
 
-export default Home;
+
+

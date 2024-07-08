@@ -20,14 +20,14 @@ export default async function handler(
       }
     );
     const price = response.data.price;
-
+    console.log(price);
     // Read the existing prices from the file
     let prices = [];
     if (fs.existsSync(filePath)) {
       const fileData = fs.readFileSync(filePath, "utf8");
       prices = JSON.parse(fileData);
     }
-    console.log(prices);
+    
     // Add the new price to the array
     prices.push({ timestamp: new Date().toISOString(), price });
 

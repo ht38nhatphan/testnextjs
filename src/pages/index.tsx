@@ -16,13 +16,25 @@ interface Price {
 const Home: React.FC = () => {
   const [prices, setPrices] = useState<Price[]>([]);
   const [loading, setLoading] = useState(true);
+  const [backgroundColor, setBackgroundColor] = useState<string>('white');
   const symbol = 'PEOPLEUSDT';
 
   useEffect(() => {
     const fetchPrices = async () => {
       try {
         const response = await axios.get<Price[]>(`/api/fetchPrice?symbol=${symbol}`);
-        setPrices(response.data);
+        const fetchedPrices = response.data;
+        
+        setPrices(fetchedPrices);
+        
+        const latestPrice = fetchedPrices[fetchedPrices.length - 1]?.price;
+        if (latestPrice < 0.052) {
+          setBackgroundColor('red');
+          
+        } else {
+          setBackgroundColor('green');
+        }
+
         setLoading(false);
       } catch (error) {
         console.error('Error fetching prices:', error);
@@ -46,7 +58,7 @@ const Home: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="md">
+    <Container maxWidth="md" style={{ backgroundColor: backgroundColor }}>
       <Box sx={{ my: 4 }}>
         <Typography variant="h4" component="h1" gutterBottom>
           Continuous Path Graph from Array of Numbers

@@ -1,0 +1,30 @@
+{
+    "version": 2,
+    "builds": [
+      {
+        "src": "pages/**/*.ts",
+        "use": "@vercel/node"
+      },
+      {
+        "src": "pages/**/*.tsx",
+        "use": "@vercel/next"
+      }
+    ],
+    "routes": [
+      {
+        "src": "/api/(.*)",
+        "dest": "/api/$1"
+      },
+      {
+        "src": "/(.*)",
+        "dest": "/$1"
+      }
+    ],
+    "functions": {
+      "api/fetchPrice.ts": {
+        "memory": 512,
+        "maxDuration": 10
+      }
+    }
+  }
+  

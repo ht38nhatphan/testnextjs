@@ -27,7 +27,7 @@ export default async function handler(
       const fileData = fs.readFileSync(filePath, "utf8");
       prices = JSON.parse(fileData);
     }
-
+    console.log(prices);
     // Add the new price to the array
     prices.push({ timestamp: new Date().toISOString(), price });
 
@@ -36,6 +36,7 @@ export default async function handler(
 
     res.status(200).json(prices);
   } catch (error) {
+
     // const query: string = `[JavaScript] fix error: ${error.message}`;
     // const encodedQuery: string = encodeURIComponent(query);
     // const url: string = `https://chatgpt/?q=${encodedQuery}`;

@@ -28,7 +28,8 @@ const Home: React.FC = () => {
         setPrices(fetchedPrices);
         
         const latestPrice = fetchedPrices[fetchedPrices.length - 1]?.price;
-        if (latestPrice < 0.0553) {
+        
+        if (latestPrice < 0.0570) {
           setBackgroundColor('red');
           
         } else {

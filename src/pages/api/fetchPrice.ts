@@ -1,53 +1,45 @@
-import type { NextApiRequest, NextApiResponse } from "next";
-import axios from "axios";
-import fs from "fs";
-import path from "path";
+import { NextApiRequest, NextApiResponse } from 'next';
+import fs from 'fs';
+import path from 'path';
+import axios from 'axios';
 
-const filePath = path.resolve(process.cwd(), "prices.json");
+const filePath = path.resolve(process.cwd(), 'data', 'prices.json');
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  const { symbol } = req.query;
+const fetchPrices = async (req: NextApiRequest, res: NextApiResponse) => {
+  const symbol = req.query.symbol as string;
+  
+  if (!symbol) {
+    return res.status(400).json({ error: 'Symbol is required' });
+  }
 
+  const baseUrl = "https://fapi.binance.com/fapi/v1/ticker/price";
+  const params = { symbol };
+  
   try {
-    // Fetch the current price from Binance
-    const response = await axios.get(
-      "https://fapi.binance.com/fapi/v1/ticker/price",
-      {
-        params: { symbol },
-      }
-    );
-    const price = response.data.price;
-    console.log(price);
-    // Read the existing prices from the file
-    let prices = [];
-    if (fs.existsSync(filePath)) {
-      const fileData = fs.readFileSync(filePath, "utf8");
-      prices = JSON.parse(fileData);
-    }
+    const response = await axios.get(baseUrl, { params });
+    const price = parseFloat(response.data.price);
     
-    // Add the new price to the array
-    prices.push({ timestamp: new Date().toISOString(), price });
+    const timestamp = new Date().toISOString();
+    
+    let prices = [];
+    
+    if (fs.existsSync(filePath)) {
+      const data = fs.readFileSync(filePath, 'utf8');
+      prices = JSON.parse(data);
+    } else {
+      fs.mkdirSync(path.dirname(filePath), { recursive: true });
+      fs.writeFileSync(filePath, JSON.stringify([]));
+    }
 
-    // Save the updated prices back to the file
-    fs.writeFileSync(filePath, JSON.stringify(prices, null, 2));
+    prices.push({ timestamp, price });
 
+    fs.writeFileSync(filePath, JSON.stringify(prices, null, 2), 'utf8');
+    
     res.status(200).json(prices);
   } catch (error) {
-
-    // const query: string = `[JavaScript] fix error: ${error.message}`;
-    // const encodedQuery: string = encodeURIComponent(query);
-    // const url: string = `https://chatgpt/?q=${encodedQuery}`;
-
-    // if (typeof window !== "undefined") {
-    //   window.open(url);
-    // } else {
-    //   console.log(`Open this URL in a browser: ${url}`);
-    // }
-
-    // console.log(query);
-    res.status(500).json({ error: 'Error fetching price' });
+    console.error('Error fetching price:', error); // Log the error to console
+    res.status(500).json({ error: 'Failed to fetch price' });
   }
-}
+};
+
+export default fetchPrices;

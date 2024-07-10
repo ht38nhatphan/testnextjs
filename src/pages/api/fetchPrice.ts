@@ -1,10 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import fs from 'fs';
-import path from 'path';
+import { db } from './firebaseAdmin';
 import axios from 'axios';
-// import { to } from './../../../../../web-ai/.next/server/vendor-chunks/next';
-
-const filePath = path.resolve(process.cwd(), 'data', 'prices.json');
+import { collection, addDoc, getDocs, query, orderBy, limit } from 'firebase/firestore';
 
 const fetchPrices = async (req: NextApiRequest, res: NextApiResponse) => {
   const symbol = req.query.symbol as string;
@@ -18,62 +15,67 @@ const fetchPrices = async (req: NextApiRequest, res: NextApiResponse) => {
   
   try {
     const response = await axios.get(baseUrl, { params });
-    const price = parseFloat(response.data.price);
+    const currentPrice = parseFloat(response.data.price);
     
     const timestamp = new Date().toISOString();
     
-    let prices = [];
-    
-    if (fs.existsSync(filePath)) {
-      const data = fs.readFileSync(filePath, 'utf8');
-      prices = JSON.parse(data);
-    } else {
-      fs.mkdirSync(path.dirname(filePath), { recursive: true });
-      fs.writeFileSync(filePath, JSON.stringify([]));
-    }
-    //giá vào lệnh
-    let pricesMoney = 1.67;
+    let prices: any[] = [];
+    const pricesCollection = collection(db, symbol);
+    const pricesQuery = query(pricesCollection, orderBy('timestamp', 'asc'));
+    const pricesSnapshot = await getDocs(pricesQuery);
+
+    pricesSnapshot.forEach(doc => {
+      prices.push(doc.data());
+    });
+
+
+    // Giá vào lệnh
+    let pricesMoney = 1.36;
     let money = 0;
-    let totalMoney = 9.74;
+    let totalMoney = 8.880;
     let percentageMoney = 50;
     let testTotalMoney = 0;
-    let stoploss = 0.0550;
-    const fisrtPrice = prices[0]?.price;
-    let percentageChange = null;
-    if (fisrtPrice !== null) {
-      percentageChange = (((price - fisrtPrice) / fisrtPrice) * 100) * percentageMoney;
-      money = pricesMoney * percentageChange / 100;
+    let stoploss = 0.0555;
+
+    const firstPrice = prices.length > 0 ? prices[0].price : null;
+    let percentageChange = 0;
+    if (firstPrice !== null) {
+      percentageChange = Math.abs((((currentPrice - firstPrice) / firstPrice) * 100) * percentageMoney);
+      money = Math.abs(pricesMoney * percentageChange / 100);
     }
+
     // Check if prices array has at least 10 entries
     if (prices.length >= 10) {
-      // Get the last 10 prices
-      const lastTenPrices = prices.slice(-10).map((entry: any) => entry.price);
-      // Calculate percentage change between the latest price and the oldest price in the last 10 prices
-      const firstPrice = lastTenPrices[0];
-      const percentageChangeLastTen = ((price - firstPrice) / firstPrice) * 100;
-      console.log(`Percentage change (last 10 prices): ${percentageChangeLastTen} %`);
+      const lastTenPrices = prices.map((entry: any) => entry.price);
+      const firstPriceLastTen = lastTenPrices[0];
+      const percentageChangeLastTen = ((currentPrice - firstPriceLastTen) / firstPriceLastTen) * 100;
+      console.log(`Percentage change (last 10 prices): ${Math.round(percentageChangeLastTen)}%`);
     } else {
       console.log("Not enough prices to calculate percentage change for last 10 entries.");
     }
-    totalMoney = money + totalMoney;
+
+    totalMoney = Math.abs(money + totalMoney);
     // Hiển thị kết quả
-    console.log(`Latest price: ${price}`);
-    console.log(`Percentage change: ${percentageChange }`);
+    console.log(`Latest price: ${currentPrice}`);
+    console.log(`Percentage change: ${Math.round(percentageChange)}%`);
     console.log(`money : ${money}`);
     console.log(`totalMoney : ${totalMoney}`);
-    //test totalMoney
-    percentageChange = (((stoploss - fisrtPrice) / fisrtPrice)* 100) * percentageMoney;
-    money = (pricesMoney * percentageChange) / 100;
 
-    testTotalMoney = money + 9.74;
-    console.log(`test totalMoney : ${testTotalMoney}`)
+    // Test totalMoney
+    percentageChange = Math.abs((((stoploss - firstPrice) / firstPrice) * 100) * percentageMoney);
+    money = Math.abs((pricesMoney * percentageChange) / 100);
+    testTotalMoney = money + 8.47;
+    console.log(`test totalMoney : ${testTotalMoney}`);
 
-    // Lưu giá vào file sau 10s
+    // BTC price
+    const baseUrlbtc = "https://fapi.binance.com/fapi/v1/ticker/price?symbol=BTCUSDT";
+    const responsebtc = await axios.get(baseUrlbtc);
+    const pricebtc = parseFloat(responsebtc.data.price);
+    console.log(`price btc : ${pricebtc}`);
     
-    prices.push({ timestamp, price });
+    // Save price to Firestore
+    await addDoc(pricesCollection, { timestamp, price: currentPrice });
 
-    fs.writeFileSync(filePath, JSON.stringify(prices, null, 2), 'utf8');
-    
     res.status(200).json(prices);
   } catch (error) {
     console.error('Error fetching price:', error); // Log the error to console

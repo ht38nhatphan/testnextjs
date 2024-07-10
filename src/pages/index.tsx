@@ -26,10 +26,10 @@ const Home: React.FC = () => {
         const fetchedPrices = response.data;
         
         setPrices(fetchedPrices);
-        
+        console.log('Fetched prices:', fetchedPrices);
         const latestPrice = fetchedPrices[fetchedPrices.length - 1]?.price;
         
-        if (latestPrice < 0.0570) {
+        if (latestPrice > 0.0587  ) {
           setBackgroundColor('red');
           
         } else {
@@ -43,10 +43,10 @@ const Home: React.FC = () => {
     };
 
     fetchPrices(); // Fetch prices initially
-    const intervalId = setInterval(fetchPrices, 10000); // Fetch every 10 seconds
+    const intervalId = setInterval(fetchPrices, 1500); // Fetch every 10 seconds
     return () => clearInterval(intervalId);
   }, []);
-
+  console.log('len:', prices.length);
   const data = {
     labels: prices.map(price => new Date(price.timestamp).toLocaleTimeString()),
     datasets: [{
@@ -75,6 +75,7 @@ const Home: React.FC = () => {
         )}
       </Box>
     </Container>
+
   );
 }
 
